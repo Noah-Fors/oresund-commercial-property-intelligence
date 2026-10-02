@@ -25,7 +25,8 @@ class City(str, Enum):
 
 class PropertyType(str, Enum):
     OFFICE = "office"
-    RETAIL = "retail"
+    RETAIL_LOCAL = "retail_local"
+    RETAIL_EXTERNAL = "retail_external"
     LOGISTICS = "logistics"
     MIXED_USE = "mixed_use"
 
@@ -81,17 +82,28 @@ class TransitStop(BaseModel):
     coordinates: Coordinates
 
 
+class HighwayInterchange(BaseModel):
+    """En trafikplats där man kan köra upp på en motorväg."""
+
+    name: str = Field(..., min_length=1)
+    road: str = Field(..., description="T.ex. 'E6/E20'.")
+    coordinates: Coordinates
+
+
 class LocationScoreComponents(BaseModel):
-    """Delpoäng (0–100) per faktor som bygger upp location score."""
+    """Delpoäng (0–100) per faktor. None betyder att data saknas än."""
 
     transit_score: float = Field(
         ..., ge=0, le=100, description="Närhet till kollektivtrafik."
     )
-    employment_score: float = Field(
-        ..., ge=0, le=100, description="Närhet till arbetsplatskoncentrationer."
+    highway_score: float = Field(
+        ..., ge=0, le=100, description="Närhet till motorvägstrafikplats."
     )
-    commercial_density_score: float = Field(
-        ...,
+    employment_score: float | None = Field(
+        default=None, ge=0, le=100, description="Närhet till arbetsplatskoncentrationer."
+    )
+    commercial_density_score: float | None = Field(
+        default=None,
         ge=0,
         le=100,
         description="Täthet av kommersiell verksamhet i närområdet.",

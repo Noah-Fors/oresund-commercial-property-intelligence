@@ -1,16 +1,16 @@
 address,city,property_type,latitude,longitude,source
 Ringugnsgatan 14,malmo,mixed_use,55.5741186689003,12.93174718623713,user
 Kronborgsvägen 20,malmo,office,55.59172497793859,12.984130512257506,user
-Käglingevägen 154,malmo,retail,55.531175194857276,13.076608869904936,user
+Käglingevägen 154,malmo,retail_local,55.531175194857276,13.076608869904936,user
 Rusthållsgatan 21,helsingborg,office,56.01551495641253,12.741713070859461,user
-Rååvägen 38,helsingborg,retail,56.00012875163353,12.739414538301878,user
+Rååvägen 38,helsingborg,retail_local,56.00012875163353,12.739414538301878,user
 Lilla Algatan 4A,lund,mixed_use,55.70374722908834,13.198106600655493,user
 "Hyllie, nära stationen",malmo,office,55.5635,12.9765,approx
-"Emporia, Hyllie",malmo,retail,55.5652,12.9715,approx
+"Emporia, Hyllie",malmo,retail_external,55.5652,12.9715,approx
 Malmö C / Universitetsholmen,malmo,office,55.6085,13.0010,approx
-Triangeln,malmo,retail,55.5948,13.0003,approx
+Triangeln,malmo,retail_local,55.5948,13.0003,approx
 Fosie industriområde,malmo,logistics,55.5670,13.0450,approx
 Ideon / Science Village,lund,office,55.7165,13.2135,approx
-"Lund C, Bangatan",lund,retail,55.7055,13.1880,approx
+"Lund C, Bangatan",lund,retail_local,55.7055,13.1880,approx
 Knutpunkten,helsingborg,office,56.0438,12.6958,approx
 Berga industriområde,helsingborg,logistics,56.0680,12.7480,approx

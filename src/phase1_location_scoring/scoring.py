@@ -1,19 +1,51 @@
-"""Beräkning av location score-komponenter.
+"""Beräkning av location score.
 
-Just nu finns bara transit-poänget. Arbetsplatser och kommersiell täthet
-läggs till när vi har data för dem.
+Varje fastighet får delpoäng (0–100) per parameter, som sedan vägs ihop
+med vikter som beror på fastighetstypen. Arbetsplatser och kommersiell
+täthet saknar data än och hoppas över i totalen.
 """
 
 from math import asin, cos, radians, sin, sqrt
-
 import pandas as pd
 
-from .models import CommercialProperty, Coordinates, TransitStop
+from .models import (
+    CommercialProperty,
+    Coordinates,
+    HighwayInterchange,
+    LocationScoreComponents,
+    PropertyType,
+    TransitStop,
+)
 
 EARTH_RADIUS_M = 6_371_000
 
-# Avståndet där transit-poänget har halverats (100 -> 50).
+# Avståndet där delpoängen har halverats (100 -> 50).
 TRANSIT_HALF_DISTANCE_M = 700
+HIGHWAY_HALF_DISTANCE_M = 2000
+
+# Vikter i procent per fastighetstyp. Varje rad summerar till 100.
+WEIGHTS: dict[PropertyType, dict[str, int]] = {
+    PropertyType.OFFICE: {
+        "transit_score": 35, "employment_score": 35,
+        "commercial_density_score": 15, "highway_score": 15,
+    },
+    PropertyType.RETAIL_LOCAL: {
+        "transit_score": 30, "employment_score": 10,
+        "commercial_density_score": 60, "highway_score": 0,
+    },
+    PropertyType.RETAIL_EXTERNAL: {
+        "transit_score": 15, "employment_score": 10,
+        "commercial_density_score": 40, "highway_score": 35,
+    },
+    PropertyType.LOGISTICS: {
+        "transit_score": 10, "employment_score": 10,
+        "commercial_density_score": 0, "highway_score": 80,
+    },
+    PropertyType.MIXED_USE: {
+        "transit_score": 35, "employment_score": 25,
+        "commercial_density_score": 40, "highway_score": 0,
+    },
+}
 
 
 def distance_m(a: Coordinates, b: Coordinates) -> float:
@@ -24,28 +56,53 @@ def distance_m(a: Coordinates, b: Coordinates) -> float:
     return 2 * EARTH_RADIUS_M * asin(sqrt(h))
 
 
-def nearest_stop(point: Coordinates, stops: list[TransitStop]) -> tuple[TransitStop, float]:
-    """Närmaste hållplats och avståndet dit i meter."""
+def nearest(point: Coordinates, places: list) -> tuple:
+    """Närmaste plats (station, trafikplats …) och avståndet dit i meter."""
     return min(
-        ((stop, distance_m(point, stop.coordinates)) for stop in stops),
+        ((place, distance_m(point, place.coordinates)) for place in places),
         key=lambda pair: pair[1],
     )
 
 
-def transit_score(
-    distance_to_stop_m: float, half_distance_m: float = TRANSIT_HALF_DISTANCE_M
-) -> float:
+def decay_score(distance: float, half_distance_m: float) -> float:
     """Exponentiell distance decay: 100 vid 0 m, halveras var `half_distance_m`."""
-    return 100 * 0.5 ** (distance_to_stop_m / half_distance_m)
+    return 100 * 0.5 ** (distance / half_distance_m)
 
 
-def score_transit(
-    properties: list[CommercialProperty], stops: list[TransitStop]
+def transit_score(distance: float) -> float:
+    return decay_score(distance, TRANSIT_HALF_DISTANCE_M)
+
+
+def highway_score(distance: float) -> float:
+    return decay_score(distance, HIGHWAY_HALF_DISTANCE_M)
+
+
+def total_score(components: LocationScoreComponents, property_type: PropertyType) -> float:
+    """Viktat medelvärde av de delpoäng som har data, med vikter för fastighetstypen."""
+    weights = WEIGHTS[property_type]
+    available = {
+        name: value
+        for name, value in components.model_dump().items()
+        if value is not None and weights[name] > 0
+    }
+    weight_sum = sum(weights[name] for name in available)
+    return sum(value * weights[name] for name, value in available.items()) / weight_sum
+
+
+def score_properties(
+    properties: list[CommercialProperty],
+    stops: list[TransitStop],
+    interchanges: list[HighwayInterchange],
 ) -> pd.DataFrame:
-    """En rad per fastighet med närmaste hållplats och transit-poäng, bäst först."""
+    """En rad per fastighet med delpoäng och totalt location score, bäst först."""
     rows = []
     for prop in properties:
-        stop, distance = nearest_stop(prop.coordinates, stops)
+        stop, stop_distance = nearest(prop.coordinates, stops)
+        interchange, interchange_distance = nearest(prop.coordinates, interchanges)
+        components = LocationScoreComponents(
+            transit_score=transit_score(stop_distance),
+            highway_score=highway_score(interchange_distance),
+        )
         rows.append(
             {
                 "address": prop.address,
@@ -54,8 +111,12 @@ def score_transit(
                 "latitude": prop.coordinates.latitude,
                 "longitude": prop.coordinates.longitude,
                 "nearest_stop": stop.name,
-                "distance_m": round(distance),
-                "transit_score": round(transit_score(distance), 1),
+                "stop_distance_m": round(stop_distance),
+                "nearest_interchange": f"{interchange.name} ({interchange.road})",
+                "interchange_distance_m": round(interchange_distance),
+                "transit_score": round(components.transit_score, 1),
+                "highway_score": round(components.highway_score, 1),
+                "total_score": round(total_score(components, prop.property_type), 1),
             }
         )
-    return pd.DataFrame(rows).sort_values("transit_score", ascending=False, ignore_index=True)
+    return pd.DataFrame(rows).sort_values("total_score", ascending=False, ignore_index=True)

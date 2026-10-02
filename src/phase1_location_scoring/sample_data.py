@@ -3,7 +3,7 @@
 import csv
 from pathlib import Path
 
-from .models import CommercialProperty, Coordinates, TransitStop
+from .models import CommercialProperty, Coordinates, HighwayInterchange, TransitStop
 
 SAMPLE_DIR = Path(__file__).resolve().parents[2] / "data" / "sample"
 
@@ -34,5 +34,15 @@ def load_transit_stops(path: Path = SAMPLE_DIR / "transit_stops.csv") -> list[Tr
                 stop_type=row["stop_type"],
                 coordinates=_coordinates(row),
             )
+            for row in csv.DictReader(f)
+        ]
+
+
+def load_highway_interchanges(
+    path: Path = SAMPLE_DIR / "highway_interchanges.csv",
+) -> list[HighwayInterchange]:
+    with open(path, encoding="utf-8") as f:
+        return [
+            HighwayInterchange(name=row["name"], road=row["road"], coordinates=_coordinates(row))
             for row in csv.DictReader(f)
         ]
