@@ -15,7 +15,22 @@ import requests
 from .models import Coordinates
 from .sample_data import SAMPLE_DIR, load_properties
 
-OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+# Huvudservern först, sedan speglingar. Huvudservern avvisar ibland
+# automatiska anrop med 406, och då provas nästa server i listan.
+OVERPASS_URLS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+]
+HEADERS = {
+    "User-Agent": (
+        "oresund-property-intelligence/1.0 "
+        "(+https://github.com/Noah-Fors/oresund-commercial-property-intelligence)"
+    ),
+    "Accept": "*/*",
+    "Accept-Language": "sv,en;q=0.8",
+}
 RADIUS_M = 500
 OUTPUT_PATH = SAMPLE_DIR / "osm_counts.csv"
 
@@ -38,20 +53,29 @@ def parse_count(response_json: dict) -> int:
     return int(response_json["elements"][0]["tags"]["total"])
 
 
-def fetch_count(query: str, attempts: int = 4) -> int:
-    """Skickar frågan till Overpass. Försöker igen om servern är överbelastad."""
+def _post(url: str, query: str, attempts: int) -> requests.Response:
+    """Skickar frågan. Försöker igen om servern är tillfälligt överbelastad."""
     for attempt in range(1, attempts + 1):
-        response = requests.post(
-            OVERPASS_URL,
-            data={"data": query},
-            headers={"User-Agent": "oresund-property-intelligence (portfolio project)"},
-            timeout=90,
-        )
+        response = requests.post(url, data={"data": query}, headers=HEADERS, timeout=90)
         if response.status_code not in (429, 504) or attempt == attempts:
-            break
+            return response
         time.sleep(10 * attempt)
-    response.raise_for_status()
-    return parse_count(response.json())
+    return response
+
+
+def fetch_count(query: str, attempts: int = 3) -> int:
+    """Provar servrarna i tur och ordning tills någon svarar."""
+    errors = []
+    for url in OVERPASS_URLS:
+        try:
+            response = _post(url, query, attempts)
+        except requests.RequestException as exc:
+            errors.append(f"{url}: {exc.__class__.__name__}")
+            continue
+        if response.ok:
+            return parse_count(response.json())
+        errors.append(f"{url}: HTTP {response.status_code}")
+    raise RuntimeError("Ingen Overpass-server svarade:\n  " + "\n  ".join(errors))
 
 
 def main() -> None:

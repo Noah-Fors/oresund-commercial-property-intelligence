@@ -1,3 +1,8 @@
+from unittest import mock
+
+import pytest
+
+from src.phase1_location_scoring import fetch_osm
 from src.phase1_location_scoring.fetch_osm import (
     COMMERCIAL_FILTERS,
     count_query,
@@ -15,3 +20,21 @@ def test_count_query_searches_around_the_point():
 def test_parse_count_reads_total():
     response = {"elements": [{"type": "count", "tags": {"nodes": "12", "ways": "3", "total": "15"}}]}
     assert parse_count(response) == 15
+
+
+def _response(status: int, total: int = 0):
+    response = mock.Mock(status_code=status, ok=status == 200)
+    response.json.return_value = {"elements": [{"tags": {"total": str(total)}}]}
+    return response
+
+
+def test_fetch_count_falls_back_to_mirror_on_406():
+    with mock.patch.object(fetch_osm.requests, "post", side_effect=[_response(406), _response(200, 42)]) as post:
+        assert fetch_osm.fetch_count("query") == 42
+    assert post.call_args_list[1].args[0] == fetch_osm.OVERPASS_URLS[1]
+
+
+def test_fetch_count_explains_when_every_server_fails():
+    with mock.patch.object(fetch_osm.requests, "post", return_value=_response(406)):
+        with pytest.raises(RuntimeError, match="Ingen Overpass-server svarade"):
+            fetch_osm.fetch_count("query")
