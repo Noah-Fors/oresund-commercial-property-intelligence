@@ -3,6 +3,7 @@
 Körs från projektmappen:
     python -m src.phase1_location_scoring.fetch_osm
 
+Alla räkningar skickas i en enda förfrågan till Overpass API.
 Resultatet sparas i data/sample/osm_counts.csv.
 """
 
@@ -31,6 +32,8 @@ HEADERS = {
     "Accept": "*/*",
     "Accept-Language": "sv,en;q=0.8",
 }
+# (sekunder för att få kontakt, sekunder för att vänta på svaret)
+TIMEOUT = (10, 180)
 RADIUS_M = 500
 OUTPUT_PATH = SAMPLE_DIR / "osm_counts.csv"
 
@@ -43,74 +46,80 @@ COMMERCIAL_FILTERS = [
 OFFICE_FILTERS = ["[office]"]
 
 
-def count_query(point: Coordinates, filters: list[str], radius_m: int = RADIUS_M) -> str:
+def _count_block(point: Coordinates, filters: list[str], radius_m: int) -> str:
     around = f"(around:{radius_m},{point.latitude},{point.longitude})"
     parts = "\n".join(f"  nwr{around}{f};" for f in filters)
-    return f"[out:json][timeout:60];\n(\n{parts}\n);\nout count;"
+    return f"(\n{parts}\n);\nout count;"
 
 
-def parse_count(response_json: dict) -> int:
-    return int(response_json["elements"][0]["tags"]["total"])
+def batch_query(points: list[Coordinates], radius_m: int = RADIUS_M) -> str:
+    """En fråga med två räkningar per punkt: först handel, sedan kontor."""
+    blocks = []
+    for point in points:
+        blocks.append(_count_block(point, COMMERCIAL_FILTERS, radius_m))
+        blocks.append(_count_block(point, OFFICE_FILTERS, radius_m))
+    return "[out:json][timeout:170];\n" + "\n".join(blocks)
+
+
+def parse_counts(response_json: dict) -> list[int]:
+    return [int(element["tags"]["total"]) for element in response_json["elements"]]
 
 
 def _post(url: str, query: str, attempts: int) -> requests.Response:
     """Skickar frågan. Försöker igen om servern är tillfälligt överbelastad."""
     for attempt in range(1, attempts + 1):
-        response = requests.post(url, data={"data": query}, headers=HEADERS, timeout=60)
+        response = requests.post(url, data={"data": query}, headers=HEADERS, timeout=TIMEOUT)
         if response.status_code not in (429, 504) or attempt == attempts:
             return response
         time.sleep(10 * attempt)
     return response
 
 
-def fetch_count(query: str, attempts: int = 3) -> int:
-    """Provar servrarna i tur och ordning tills någon svarar.
-
-    En server som svarar flyttas först i listan, så att nästa fråga går dit direkt.
-    """
+def fetch_counts(query: str, attempts: int = 2) -> list[int]:
+    """Provar servrarna i tur och ordning tills någon svarar."""
     errors = []
-    for url in list(OVERPASS_URLS):
+    for url in OVERPASS_URLS:
+        print(f"Frågar {url} …", flush=True)
         try:
             response = _post(url, query, attempts)
         except requests.RequestException as exc:
             reason = exc.__class__.__name__
         else:
             if response.ok:
-                OVERPASS_URLS.remove(url)
-                OVERPASS_URLS.insert(0, url)
-                return parse_count(response.json())
+                return parse_counts(response.json())
             reason = f"HTTP {response.status_code}"
         errors.append(f"{url}: {reason}")
-        print(f"    {url} svarade inte ({reason}), provar nästa server …", flush=True)
+        print(f"  svarade inte ({reason}), provar nästa server …", flush=True)
     raise RuntimeError("Ingen Overpass-server svarade:\n  " + "\n  ".join(errors))
 
 
 def main() -> None:
-    rows = []
-    for prop in load_properties():
-        print(f"Hämtar {prop.address} …", flush=True)
-        commercial = fetch_count(count_query(prop.coordinates, COMMERCIAL_FILTERS))
-        time.sleep(1)
-        offices = fetch_count(count_query(prop.coordinates, OFFICE_FILTERS))
-        time.sleep(1)
-        rows.append(
-            {
-                "address": prop.address,
-                "commercial_count": commercial,
-                "office_count": offices,
-                "radius_m": RADIUS_M,
-                "fetched": date.today().isoformat(),
-            }
-        )
-        print(f"  -> handel/restaurang: {commercial:4}   kontor: {offices:4}", flush=True)
+    properties = load_properties()
+    counts = fetch_counts(batch_query([p.coordinates for p in properties]))
+    if len(counts) != 2 * len(properties):
+        raise RuntimeError(f"Väntade {2 * len(properties)} siffror men fick {len(counts)}.")
 
+    rows = [
+        {
+            "address": prop.address,
+            "commercial_count": counts[2 * i],
+            "office_count": counts[2 * i + 1],
+            "radius_m": RADIUS_M,
+            "fetched": date.today().isoformat(),
+        }
+        for i, prop in enumerate(properties)
+    ]
     with open(OUTPUT_PATH, "w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=rows[0].keys())
         writer.writeheader()
         writer.writerows(rows)
+
     print("\nResultat:")
     for row in rows:
-        print(f"{row['address']:30} handel/restaurang: {row['commercial_count']:4}   kontor: {row['office_count']:4}")
+        print(
+            f"{row['address']:30} handel/restaurang: {row['commercial_count']:4}"
+            f"   kontor: {row['office_count']:4}"
+        )
     print(f"\nSparat i {OUTPUT_PATH}")
 
 
