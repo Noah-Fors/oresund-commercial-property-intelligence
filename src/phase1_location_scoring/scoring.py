@@ -26,8 +26,8 @@ HIGHWAY_HALF_DISTANCE_M = 2000
 # Vikter i procent per fastighetstyp. Varje rad summerar till 100.
 WEIGHTS: dict[PropertyType, dict[str, int]] = {
     PropertyType.OFFICE: {
-        "transit_score": 35, "employment_score": 35,
-        "commercial_density_score": 15, "highway_score": 15,
+        "transit_score": 40, "employment_score": 35,
+        "commercial_density_score": 15, "highway_score": 10,
     },
     PropertyType.RETAIL_LOCAL: {
         "transit_score": 30, "employment_score": 10,
@@ -42,8 +42,8 @@ WEIGHTS: dict[PropertyType, dict[str, int]] = {
         "commercial_density_score": 0, "highway_score": 80,
     },
     PropertyType.MIXED_USE: {
-        "transit_score": 35, "employment_score": 25,
-        "commercial_density_score": 40, "highway_score": 0,
+        "transit_score": 30, "employment_score": 25,
+        "commercial_density_score": 35, "highway_score": 10,
     },
 }
 
