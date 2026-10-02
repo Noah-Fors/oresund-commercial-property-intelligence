@@ -46,3 +46,9 @@ def load_highway_interchanges(
             HighwayInterchange(name=row["name"], road=row["road"], coordinates=_coordinates(row))
             for row in csv.DictReader(f)
         ]
+
+
+def load_commercial_counts(path: Path = SAMPLE_DIR / "osm_counts.csv") -> dict[str, int]:
+    """Antal butiker/restauranger inom 500 m per adress, hämtat med fetch_osm.py."""
+    with open(path, encoding="utf-8") as f:
+        return {row["address"]: int(row["commercial_count"]) for row in csv.DictReader(f)}

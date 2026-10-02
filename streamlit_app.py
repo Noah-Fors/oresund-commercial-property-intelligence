@@ -8,11 +8,13 @@ from src.phase1_location_scoring.location_map import (
     build_score_map,
 )
 from src.phase1_location_scoring.sample_data import (
+    load_commercial_counts,
     load_highway_interchanges,
     load_properties,
     load_transit_stops,
 )
 from src.phase1_location_scoring.scoring import (
+    COMMERCIAL_HALF_COUNT,
     HIGHWAY_HALF_DISTANCE_M,
     TRANSIT_HALF_DISTANCE_M,
     WEIGHTS,
@@ -40,14 +42,17 @@ with tab1:
     st.caption(
         "Location score 0–100, viktat efter fastighetstyp. Just nu ingår avstånd till "
         f"närmaste tåg-/spårvagnsstation (halveras var {TRANSIT_HALF_DISTANCE_M} m) och "
-        f"till närmaste motorvägstrafikplats (halveras var {HIGHWAY_HALF_DISTANCE_M} m). "
-        "Arbetsplatser och kommersiell täthet saknar data än och hoppas över. "
+        f"till närmaste motorvägstrafikplats (halveras var {HIGHWAY_HALF_DISTANCE_M} m), "
+        "samt kommersiell täthet: antal butiker, restauranger, caféer, barer, banker och "
+        f"apotek inom 500 m enligt OpenStreetMap ({COMMERCIAL_HALF_COUNT} verksamheter ger 50 poäng). "
+        "OpenStreetMap kan vara ofullständigt, t.ex. saknas troligen butikerna inne i Emporia. "
+        "Arbetsplatser saknar tillförlitlig data än och hoppas över. "
         "Exempeldata, koordinater delvis ungefärliga."
     )
 
     stops = load_transit_stops()
     interchanges = load_highway_interchanges()
-    scores = score_properties(load_properties(), stops, interchanges)
+    scores = score_properties(load_properties(), stops, interchanges, load_commercial_counts())
 
     st_folium(
         build_score_map(scores, stops, interchanges),
@@ -60,6 +65,7 @@ with tab1:
         city=scores.city.map(CITY_LABELS),
         property_type=scores.property_type.map(PROPERTY_TYPE_LABELS),
     )
+
     def score_column(label: str):
         return st.column_config.ProgressColumn(label, min_value=0, max_value=100, format="%.0f")
 
@@ -67,9 +73,10 @@ with tab1:
         table[[
             "address", "city", "property_type", "total_score",
             "transit_score", "nearest_stop", "highway_score", "nearest_interchange",
+            "commercial_density_score", "commercial_count",
         ]],
         hide_index=True,
-        use_container_width=True,
+        width="stretch",
         column_config={
             "address": "Adress",
             "city": "Stad",
@@ -79,6 +86,8 @@ with tab1:
             "nearest_stop": "Närmaste station",
             "highway_score": score_column("Motorväg"),
             "nearest_interchange": "Närmaste trafikplats",
+            "commercial_density_score": score_column("Kommersiell täthet"),
+            "commercial_count": st.column_config.NumberColumn("Verksamheter inom 500 m", format="%d"),
         },
     )
 
@@ -96,7 +105,7 @@ with tab1:
                 "commercial_density_score": "Kommersiell täthet (%)",
                 "highway_score": "Motorväg (%)",
             }),
-            use_container_width=True,
+            width="stretch",
         )
 
 with tab2:

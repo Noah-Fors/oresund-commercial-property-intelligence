@@ -39,7 +39,9 @@ def _property_tooltip(row) -> str:
         f"Kollektivtrafik: {row.transit_score:.0f} "
         f"({escape(row.nearest_stop)}, {_meters(row.stop_distance_m)})<br>"
         f"Motorväg: {row.highway_score:.0f} "
-        f"({escape(row.nearest_interchange)}, {_meters(row.interchange_distance_m)})"
+        f"({escape(row.nearest_interchange)}, {_meters(row.interchange_distance_m)})<br>"
+        f"Kommersiell täthet: {row.commercial_density_score:.0f} "
+        f"({row.commercial_count} verksamheter inom 500 m)"
     )
 
 

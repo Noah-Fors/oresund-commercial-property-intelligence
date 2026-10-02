@@ -2,12 +2,14 @@ import pytest
 
 from src.phase1_location_scoring.models import Coordinates, LocationScoreComponents, PropertyType
 from src.phase1_location_scoring.sample_data import (
+    load_commercial_counts,
     load_highway_interchanges,
     load_properties,
     load_transit_stops,
 )
 from src.phase1_location_scoring.scoring import (
     WEIGHTS,
+    commercial_density_score,
     distance_m,
     highway_score,
     score_properties,
@@ -39,6 +41,13 @@ def test_scores_fall_with_distance_but_never_below_zero():
     assert transit_score(100) > transit_score(500) > transit_score(5000) > 0
 
 
+def test_commercial_density_saturates():
+    assert commercial_density_score(0) == 0
+    assert commercial_density_score(50) == pytest.approx(50)
+    assert commercial_density_score(100) == pytest.approx(75)
+    assert commercial_density_score(300) < 100
+
+
 @pytest.mark.parametrize("property_type", list(PropertyType))
 def test_every_property_type_has_weights_summing_to_100(property_type):
     assert sum(WEIGHTS[property_type].values()) == 100
@@ -59,10 +68,13 @@ def test_sample_data_loads():
     assert len(load_properties()) == 15
     assert len(load_transit_stops()) == 9
     assert len(load_highway_interchanges()) == 12
+    assert set(load_commercial_counts()) == {p.address for p in load_properties()}
 
 
 def test_score_properties_ranks_best_location_first():
-    scores = score_properties(load_properties(), load_transit_stops(), load_highway_interchanges())
+    scores = score_properties(
+        load_properties(), load_transit_stops(), load_highway_interchanges(), load_commercial_counts()
+    )
     assert len(scores) == 15
     assert scores.total_score.is_monotonic_decreasing
     assert scores.total_score.between(0, 100).all()

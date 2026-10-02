@@ -22,3 +22,4 @@ Saker vi medvetet har skjutit upp. Flytta en punkt till "Klart" när den är gjo
 - [x] Handel uppdelad i tätortshandel och externhandel
 - [x] Motorvägsparameter: avstånd till närmaste trafikplats (halveras var 2 000 m)
 - [x] Vikter per fastighetstyp och totalt location score
+- [x] Kommersiell täthet från OpenStreetMap (verksamheter inom 500 m, mättnadskurva där 50 ger 50 poäng)
