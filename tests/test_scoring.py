@@ -2,7 +2,7 @@ import pytest
 
 from src.phase1_location_scoring.models import Coordinates
 from src.phase1_location_scoring.sample_data import load_properties, load_transit_stops
-from src.phase1_location_scoring.scoring import distance_m, transit_score
+from src.phase1_location_scoring.scoring import distance_m, score_transit, transit_score
 
 
 def test_one_degree_of_latitude_is_about_111_km():
@@ -27,3 +27,10 @@ def test_transit_score_falls_with_distance_but_never_below_zero():
 def test_sample_data_loads():
     assert len(load_properties()) == 15
     assert len(load_transit_stops()) == 9
+
+
+def test_score_transit_ranks_best_location_first():
+    scores = score_transit(load_properties(), load_transit_stops())
+    assert len(scores) == 15
+    assert scores.transit_score.is_monotonic_decreasing
+    assert scores.iloc[0].nearest_stop == "Triangeln"

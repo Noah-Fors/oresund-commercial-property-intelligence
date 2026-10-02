@@ -72,6 +72,15 @@ class CommercialProperty(BaseModel):
     )
 
 
+class TransitStop(BaseModel):
+    """En station eller hållplats i kollektivtrafiken."""
+
+    name: str = Field(..., min_length=1)
+    city: City
+    stop_type: str = Field(..., description="T.ex. 'rail' eller 'tram'.")
+    coordinates: Coordinates
+
+
 class LocationScoreComponents(BaseModel):
     """Delpoäng (0–100) per faktor som bygger upp location score."""
 
