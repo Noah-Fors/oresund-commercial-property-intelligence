@@ -10,7 +10,6 @@ Saker vi medvetet har skjutit upp. Flytta en punkt till "Klart" när den är gjo
 - [ ] **Få Lantmäteriets API att fungera.** Prenumerationen är klar, men vi har inte lyckats hämta en access token ("Consumer key and secret not generated" i API Console).
 - [ ] **Data för arbetsplatser och kommersiell täthet.** Två av location scorens parametrar saknar fortfarande data (SCB respektive Lantmäteriet).
 - [ ] **Stadsdel som eget fält.** Områdesnamnen (Limhamn, Oxie, Råå …) försvann när adresserna lades in. Lägg till ett `district`-fält om de behövs i karta eller rapport.
-
 - [ ] **Befolkning i närområdet som parameter.** Tätortshandel (t.ex. pizzerian på Käglingevägen 154) lever på boende i närheten, vilket ingen av parametrarna fångar idag. Data finns hos SCB.
 
 ## Klart
