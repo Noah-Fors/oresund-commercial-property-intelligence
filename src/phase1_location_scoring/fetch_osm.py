@@ -56,7 +56,7 @@ def parse_count(response_json: dict) -> int:
 def _post(url: str, query: str, attempts: int) -> requests.Response:
     """Skickar frågan. Försöker igen om servern är tillfälligt överbelastad."""
     for attempt in range(1, attempts + 1):
-        response = requests.post(url, data={"data": query}, headers=HEADERS, timeout=90)
+        response = requests.post(url, data={"data": query}, headers=HEADERS, timeout=60)
         if response.status_code not in (429, 504) or attempt == attempts:
             return response
         time.sleep(10 * attempt)
@@ -64,23 +64,31 @@ def _post(url: str, query: str, attempts: int) -> requests.Response:
 
 
 def fetch_count(query: str, attempts: int = 3) -> int:
-    """Provar servrarna i tur och ordning tills någon svarar."""
+    """Provar servrarna i tur och ordning tills någon svarar.
+
+    En server som svarar flyttas först i listan, så att nästa fråga går dit direkt.
+    """
     errors = []
-    for url in OVERPASS_URLS:
+    for url in list(OVERPASS_URLS):
         try:
             response = _post(url, query, attempts)
         except requests.RequestException as exc:
-            errors.append(f"{url}: {exc.__class__.__name__}")
-            continue
-        if response.ok:
-            return parse_count(response.json())
-        errors.append(f"{url}: HTTP {response.status_code}")
+            reason = exc.__class__.__name__
+        else:
+            if response.ok:
+                OVERPASS_URLS.remove(url)
+                OVERPASS_URLS.insert(0, url)
+                return parse_count(response.json())
+            reason = f"HTTP {response.status_code}"
+        errors.append(f"{url}: {reason}")
+        print(f"    {url} svarade inte ({reason}), provar nästa server …", flush=True)
     raise RuntimeError("Ingen Overpass-server svarade:\n  " + "\n  ".join(errors))
 
 
 def main() -> None:
     rows = []
     for prop in load_properties():
+        print(f"Hämtar {prop.address} …", flush=True)
         commercial = fetch_count(count_query(prop.coordinates, COMMERCIAL_FILTERS))
         time.sleep(1)
         offices = fetch_count(count_query(prop.coordinates, OFFICE_FILTERS))
@@ -94,12 +102,15 @@ def main() -> None:
                 "fetched": date.today().isoformat(),
             }
         )
-        print(f"{prop.address:30} handel/restaurang: {commercial:4}   kontor: {offices:4}")
+        print(f"  -> handel/restaurang: {commercial:4}   kontor: {offices:4}", flush=True)
 
     with open(OUTPUT_PATH, "w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=rows[0].keys())
         writer.writeheader()
         writer.writerows(rows)
+    print("\nResultat:")
+    for row in rows:
+        print(f"{row['address']:30} handel/restaurang: {row['commercial_count']:4}   kontor: {row['office_count']:4}")
     print(f"\nSparat i {OUTPUT_PATH}")
 
 

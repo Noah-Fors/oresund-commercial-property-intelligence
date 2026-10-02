@@ -28,13 +28,19 @@ def _response(status: int, total: int = 0):
     return response
 
 
-def test_fetch_count_falls_back_to_mirror_on_406():
-    with mock.patch.object(fetch_osm.requests, "post", side_effect=[_response(406), _response(200, 42)]) as post:
+def test_fetch_count_falls_back_to_mirror_and_remembers_it():
+    urls = ["https://main", "https://mirror"]
+    with mock.patch.object(fetch_osm, "OVERPASS_URLS", urls), mock.patch.object(
+        fetch_osm.requests, "post", side_effect=[_response(406), _response(200, 42), _response(200, 7)]
+    ) as post:
         assert fetch_osm.fetch_count("query") == 42
-    assert post.call_args_list[1].args[0] == fetch_osm.OVERPASS_URLS[1]
+        assert fetch_osm.fetch_count("query") == 7
+    assert [c.args[0] for c in post.call_args_list] == ["https://main", "https://mirror", "https://mirror"]
 
 
 def test_fetch_count_explains_when_every_server_fails():
-    with mock.patch.object(fetch_osm.requests, "post", return_value=_response(406)):
+    with mock.patch.object(fetch_osm, "OVERPASS_URLS", ["https://a", "https://b"]), mock.patch.object(
+        fetch_osm.requests, "post", return_value=_response(406)
+    ):
         with pytest.raises(RuntimeError, match="Ingen Overpass-server svarade"):
             fetch_osm.fetch_count("query")
