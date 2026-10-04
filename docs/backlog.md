@@ -13,6 +13,12 @@ Saker vi medvetet har skjutit upp. Flytta en punkt till "Klart" när den är gjo
 - [ ] **Stadsdel som eget fält.** Områdesnamnen (Limhamn, Oxie, Råå …) försvann när adresserna lades in. Lägg till ett `district`-fält om de behövs i karta eller rapport.
 - [ ] **Befolkning i närområdet som parameter.** Tätortshandel (t.ex. pizzerian på Käglingevägen 154) lever på boende i närheten, vilket ingen av parametrarna fångar idag. Data finns hos SCB.
 
+## Fas 2 — Värderingsmotor
+
+- [ ] **Kalibrera yield-ankaret.** Location score 60 antas motsvara ett normalt läge (basyield). Byt mot medianen av location score för alla fastigheter av samma typ i staden, eller räkna om poängen till percentil, när det finns riktig data om beståndet.
+- [ ] **Basyields från riktiga marknadsrapporter.** Basyield per fastighetstyp och stad är exempelvärden. Ersätt med aktuella siffror från rådgivningsfirmornas marknadsrapporter (kopplar till Fas 3).
+- [ ] **Fler faktorer än läget i yield-kravet.** Byggnadens skick, hyresgästernas kreditvärdighet och WAULT påverkar också yielden. Idag tillskrivs hela justeringen läget.
+
 ## Klart
 
 - [x] Datamodell för fastigheter och location score
