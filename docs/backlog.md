@@ -20,6 +20,8 @@ Saker vi medvetet har skjutit upp. Flytta en punkt till "Klart" när den är gjo
 - [ ] **Fler faktorer än läget i yield-kravet.** Byggnadens skick, hyresgästernas kreditvärdighet och WAULT påverkar också yielden. Idag tillskrivs hela justeringen läget.
 - [ ] **Samband mellan antagandena i Monte Carlo.** Yield, marknadshyra och KPI slumpas oberoende av varandra. I en lågkonjunktur stiger ofta yields samtidigt som hyrorna faller, så den verkliga risken i svansarna är troligen större än simuleringen visar.
 - [ ] **Uthyrningskostnader vid tomställning.** Void deduction drar bara av förlorad hyra. Lägg till kostnader för hyresgästanpassning och mäklararvode.
+- [ ] **Dela upp yield-osäkerheten i Monte Carlo.** Idag används samma slumpade yield för både discount rate (dagens avkastningskrav) och exit yield (om fem år). Dagens yield är ganska känd från transaktioner (±0,20 procentenheter), medan förändringen fram till exit är osäkrare (±0,50). Ett test visade att intervallet knappt ändras (±16 % mot ±17 %), men uppdelningen är konceptuellt mer korrekt.
+- [ ] **Formulera Monte Carlo-intervallet rätt.** Intervallet beskriver osäkerheten i investeringens utfall över fem år, inte osäkerheten i dagens marknadsvärde. Det ska framgå i appen och rapporten.
 
 ## Klart
 
@@ -31,3 +33,9 @@ Saker vi medvetet har skjutit upp. Flytta en punkt till "Klart" när den är gjo
 - [x] Motorvägsparameter: avstånd till närmaste trafikplats (halveras var 2 000 m)
 - [x] Vikter per fastighetstyp och totalt location score
 - [x] Kommersiell täthet från OpenStreetMap (verksamheter inom 500 m, mättnadskurva där 50 ger 50 poäng)
+- [x] Fas 2: NOI och direct capitalisation
+- [x] Fas 2: DCF med tidsvärdet av pengar och exit value
+- [x] Fas 2: DCF kontrakt för kontrakt, WAULT, void deduction
+- [x] Fas 2: Location score → yield-krav (asymmetrisk S-kurva runt score 60)
+- [x] Fas 2: Känslighetsmatris yield × marknadshyra
+- [x] Fas 2: Monte Carlo-simulering (10 000 scenarier)
