@@ -45,11 +45,13 @@ def discounted_cash_flow(
     exit_noi: float,
     discount_rate: float,
     exit_yield: float,
+    exit_deduction: float = 0.0,
 ) -> DcfResult:
     """DCF på en given serie NOI.
 
     `noi_by_year` är NOI för år 1..n under kalkylperioden.
     `exit_noi` är NOI för år n+1, som köparen betalar för vid exit.
+    `exit_deduction` dras av från exit value, t.ex. förlorad hyra under tomställning.
     """
     if not noi_by_year:
         raise ValueError("Kalkylperioden måste vara minst ett år.")
@@ -66,7 +68,7 @@ def discounted_cash_flow(
         for year, noi in enumerate(noi_by_year, start=1)
     ]
     holding_period = len(noi_by_year)
-    exit_value = exit_noi / exit_yield
+    exit_value = exit_noi / exit_yield - exit_deduction
     pv_exit_value = exit_value * discount_factor(discount_rate, holding_period)
 
     return DcfResult(

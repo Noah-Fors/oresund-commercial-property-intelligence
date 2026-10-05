@@ -8,6 +8,7 @@ from src.phase2_valuation.leases import (
     costs,
     lease_rent,
     noi,
+    stabilised_exit,
     value_with_leases,
     wault,
 )
@@ -58,3 +59,20 @@ def test_market_value_with_five_year_dcf():
     assert result.exit_value == pytest.approx(53_837_083, abs=1)
     assert result.pv_exit_value == pytest.approx(37_939_798, abs=1)
     assert result.market_value == pytest.approx(47_060_158, abs=1)
+
+
+def test_tenant_leaving_at_exit_is_valued_as_let_minus_lost_rent():
+    b_leaves = TENANT_B.model_copy(update={"void_years_after_expiry": 1})
+    scenario = KRONBORGSVAGEN_20.model_copy(update={"leases": [TENANT_A, b_leaves]})
+    exit_noi, deduction = stabilised_exit(scenario, holding_period_years=5)
+    assert exit_noi == pytest.approx(noi(KRONBORGSVAGEN_20, 6))
+    assert deduction == pytest.approx(lease_rent(TENANT_B, KRONBORGSVAGEN_20, 6))
+    leaves = value_with_leases(scenario, 5, 0.0725, 0.0525).market_value
+    stays = value_with_leases(KRONBORGSVAGEN_20, 5, 0.0725, 0.0525).market_value
+    assert leaves < stays
+
+
+def test_lease_running_past_exit_has_no_void_deduction():
+    long_lease = TENANT_B.model_copy(update={"expiry_year": 10})
+    scenario = KRONBORGSVAGEN_20.model_copy(update={"leases": [TENANT_A, long_lease]})
+    assert stabilised_exit(scenario, holding_period_years=5)[1] == 0

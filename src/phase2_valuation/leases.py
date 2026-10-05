@@ -47,11 +47,15 @@ def market_rent_per_sqm(a: PropertyCashFlowAssumptions, year: int) -> float:
     return a.market_rent_per_sqm * _index(a.indexation, year)
 
 
+def _is_void(lease: Lease, year: int) -> bool:
+    return lease.expiry_year < year <= lease.expiry_year + lease.void_years_after_expiry
+
+
 def lease_rent(lease: Lease, a: PropertyCashFlowAssumptions, year: int) -> float:
     """Hyra från ett kontrakt under ett visst år."""
     if year <= lease.expiry_year:
         return lease.annual_rent_year_1 * _index(a.indexation, year)
-    if year <= lease.expiry_year + lease.void_years_after_expiry:
+    if _is_void(lease, year):
         return 0.0
     return lease.area_sqm * market_rent_per_sqm(a, year)
 
@@ -79,5 +83,32 @@ def value_with_leases(
 ) -> DcfResult:
     """DCF där NOI räknas fram kontrakt för kontrakt."""
     noi_by_year = [noi(a, year) for year in range(1, holding_period_years + 1)]
-    exit_noi = noi(a, holding_period_years + 1)
-    return discounted_cash_flow(noi_by_year, exit_noi, discount_rate, exit_yield)
+    exit_noi, void_deduction = stabilised_exit(a, holding_period_years)
+    return discounted_cash_flow(
+        noi_by_year, exit_noi, discount_rate, exit_yield, exit_deduction=void_deduction
+    )
+
+
+def stabilised_exit(a: PropertyCashFlowAssumptions, holding_period_years: int) -> tuple[float, float]:
+    """NOI för exit-året som om alla lokaler vore uthyrda, och förlorad hyra att dra av.
+
+    Lokaler som står tomma vid eller efter exit räknas som uthyrda till marknadshyra
+    i exit-NOI. Hyran de går miste om under tomställningen dras istället av från
+    exit value (void deduction), eftersom köparen tar den förlusten.
+    """
+    exit_year = holding_period_years + 1
+    rent = sum(
+        lease.area_sqm * market_rent_per_sqm(a, exit_year)
+        if _is_void(lease, exit_year)
+        else lease_rent(lease, a, exit_year)
+        for lease in a.leases
+    )
+    void_deduction = sum(
+        lease.area_sqm * market_rent_per_sqm(a, year)
+        for lease in a.leases
+        for year in range(
+            max(exit_year, lease.expiry_year + 1),
+            lease.expiry_year + lease.void_years_after_expiry + 1,
+        )
+    )
+    return rent - costs(a, exit_year), void_deduction
