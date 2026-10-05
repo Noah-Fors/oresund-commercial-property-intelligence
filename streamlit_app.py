@@ -20,6 +20,7 @@ from src.phase1_location_scoring.scoring import (
     WEIGHTS,
     score_properties,
 )
+from src.phase2_valuation.ui import render_valuation_tab
 
 st.set_page_config(
     page_title="Öresund Commercial Property Intelligence",
@@ -109,8 +110,7 @@ with tab1:
         )
 
 with tab2:
-    st.header("Fas 2 — Värderingsmotor")
-    st.info("Inte implementerad än. Se docs/plan.md för fasbeskrivning.")
+    render_valuation_tab(scores)
 
 with tab3:
     st.header("Fas 3 — Marknadsdashboard och rapport")

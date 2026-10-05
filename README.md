@@ -14,8 +14,8 @@ Se [docs/plan.md](docs/plan.md) för den fullständiga fasplanen.
 
 | Fas | Innehåll | Tid | Status |
 |---|---|---|---|
-| 1 | Geospatial location scoring | 2–3 veckor | 🔲 Ej påbörjad |
-| 2 | Värderingsmotor (avkastningsmetoden) | 2 veckor | 🔲 Ej påbörjad |
+| 1 | Geospatial location scoring | 2–3 veckor | ✅ Exempeldata, karta och viktat location score (arbetsplatsdata saknas) |
+| 2 | Värderingsmotor (DCF kontrakt för kontrakt) | 2 veckor | ✅ DCF, location score → yield, känslighetsmatris, Monte Carlo |
 | 3 | Marknadsdashboard + PDF-rapport | 3–4 veckor | 🔲 Ej påbörjad |
 
 ## Teknisk stack

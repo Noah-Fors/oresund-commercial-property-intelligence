@@ -39,3 +39,4 @@ Saker vi medvetet har skjutit upp. Flytta en punkt till "Klart" när den är gjo
 - [x] Fas 2: Location score → yield-krav (asymmetrisk S-kurva runt score 60)
 - [x] Fas 2: Känslighetsmatris yield × marknadshyra
 - [x] Fas 2: Monte Carlo-simulering (10 000 scenarier)
+- [x] Fas 2: Värderingsflik i Streamlit (indata, kassaflöde, känslighetsmatris, Monte Carlo-histogram)
