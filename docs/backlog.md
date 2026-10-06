@@ -23,6 +23,10 @@ Saker vi medvetet har skjutit upp. Flytta en punkt till "Klart" när den är gjo
 - [ ] **Dela upp yield-osäkerheten i Monte Carlo.** Idag används samma slumpade yield för både discount rate (dagens avkastningskrav) och exit yield (om fem år). Dagens yield är ganska känd från transaktioner (±0,20 procentenheter), medan förändringen fram till exit är osäkrare (±0,50). Ett test visade att intervallet knappt ändras (±16 % mot ±17 %), men uppdelningen är konceptuellt mer korrekt.
 - [ ] **Formulera Monte Carlo-intervallet rätt.** Intervallet beskriver osäkerheten i investeringens utfall över fem år, inte osäkerheten i dagens marknadsvärde. Det ska framgå i appen och rapporten.
 
+## Fas 3 — Marknadsrapport
+
+- [ ] **Fler fastighetstyper än kontor.** Rapporten börjar med kontor. Handel och logistik kan läggas till med samma mall.
+
 ## Klart
 
 - [x] Datamodell för fastigheter och location score
@@ -40,3 +44,4 @@ Saker vi medvetet har skjutit upp. Flytta en punkt till "Klart" när den är gjo
 - [x] Fas 2: Känslighetsmatris yield × marknadshyra
 - [x] Fas 2: Monte Carlo-simulering (10 000 scenarier)
 - [x] Fas 2: Värderingsflik i Streamlit (indata, kassaflöde, känslighetsmatris, Monte Carlo-histogram)
+- [x] Fas 3: Excel-mall och datamodell för nyckeltal och kontorsannonser, med kontrollskript

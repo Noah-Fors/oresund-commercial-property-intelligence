@@ -7,6 +7,7 @@ streamlit>=1.35
 streamlit-folium>=0.21
 plotly>=5.22
 matplotlib>=3.9
+openpyxl>=3.1
 requests>=2.32
 python-dotenv>=1.0
 pytest>=8.0
