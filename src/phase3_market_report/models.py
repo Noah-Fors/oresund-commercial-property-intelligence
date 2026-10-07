@@ -55,7 +55,7 @@ class MarketMetric(BaseModel):
         if self.high < self.low:
             raise ValueError(f"high ({self.high}) är lägre än low ({self.low}).")
         if self.unit == "%" and not 0.5 <= self.high <= 50:
-            raise ValueError(f"{self.high} är inte ett rimligt procenttal. Skriv 4,85 % som 4.85, inte 0.0485.")
+            raise ValueError(f"{self.high} är inte ett rimligt procenttal. Skriv 4,85 i Excel, inte 4,85 % eller 0,0485.")
         return self
 
     @property
