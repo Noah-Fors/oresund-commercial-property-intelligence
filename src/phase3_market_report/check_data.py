@@ -8,7 +8,7 @@ Skapar en tom mall om arbetsboken inte finns.
 
 from collections import Counter
 
-from src.phase1_location_scoring.location_map import CITY_LABELS
+from src.phase1_location_scoring.models import CITY_LABELS
 
 from .data import WORKBOOK, create_template, load_listings, load_metrics
 

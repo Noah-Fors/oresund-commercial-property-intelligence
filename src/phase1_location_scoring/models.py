@@ -31,6 +31,17 @@ class PropertyType(str, Enum):
     MIXED_USE = "mixed_use"
 
 
+# Svenska namn för visning i appen och rapporten.
+CITY_LABELS = {"malmo": "Malmö", "lund": "Lund", "helsingborg": "Helsingborg"}
+PROPERTY_TYPE_LABELS = {
+    "office": "Kontor",
+    "retail_local": "Tätortshandel",
+    "retail_external": "Externhandel",
+    "logistics": "Logistik",
+    "mixed_use": "Blandad",
+}
+
+
 class Coordinates(BaseModel):
     """En WGS84-punkt (latitud/longitud) inom Öresundsregionen."""
 

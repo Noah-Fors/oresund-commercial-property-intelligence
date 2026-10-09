@@ -6,7 +6,7 @@ import folium
 import pandas as pd
 from branca.colormap import LinearColormap
 
-from .models import HighwayInterchange, TransitStop
+from .models import CITY_LABELS, PROPERTY_TYPE_LABELS, HighwayInterchange, TransitStop
 
 # Sekventiell blå skala (ljus = lågt, mörk = högt). Börjar på en mellanljus
 # nyans så att även låga poäng syns mot den ljusa bakgrundskartan.
@@ -16,15 +16,6 @@ SCORE_COLORS = [
 ]
 REFERENCE_INK = "#52514e"
 SURFACE = "#fcfcfb"
-
-PROPERTY_TYPE_LABELS = {
-    "office": "Kontor",
-    "retail_local": "Tätortshandel",
-    "retail_external": "Externhandel",
-    "logistics": "Logistik",
-    "mixed_use": "Blandad",
-}
-CITY_LABELS = {"malmo": "Malmö", "lund": "Lund", "helsingborg": "Helsingborg"}
 
 
 def _meters(value: int) -> str:
