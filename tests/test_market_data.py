@@ -53,6 +53,19 @@ def test_percent_written_as_decimal_is_rejected():
                      source="Exempel", published=date(2026, 3, 31))
 
 
+def test_rent_written_as_yield_is_rejected():
+    # Prime yield 4,52 % inmatat som decimaltal, med prime_rent valt i rullistan.
+    with pytest.raises(ValueError, match="prime_rent"):
+        MarketMetric(city="malmo", submarket="CBD", metric="prime_rent", low=0.0452,
+                     source="Exempel", published=date(2026, 6, 30))
+
+
+def test_implausible_low_end_of_range_is_rejected():
+    with pytest.raises(ValueError, match="rent_range"):
+        MarketMetric(city="lund", submarket="Lägesklass A", metric="rent_range", low=170, high=2700,
+                     source="Exempel", published=date(2026, 6, 30))
+
+
 def test_monthly_rent_is_caught():
     with pytest.raises(ValueError, match="per månad"):
         OfficeListing(address="Stortorget 1", city="malmo", district="Centrum", area_sqm=200,

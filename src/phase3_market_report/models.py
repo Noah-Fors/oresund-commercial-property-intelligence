@@ -35,6 +35,18 @@ METRIC_UNITS: dict[Metric, str] = {
     Metric.TRANSACTION_VOLUME: "Mkr",
 }
 
+# Rimliga värden för kontor i Skåne. Ett värde utanför intervallet är nästan
+# alltid ett inmatningsfel: fel nyckeltal i rullistan, procent som decimaltal,
+# hyra per månad i stället för per år, eller miljoner skrivna som kronor.
+PLAUSIBLE_RANGES: dict[Metric, tuple[float, float]] = {
+    Metric.PRIME_RENT: (500, 10_000),
+    Metric.RENT_RANGE: (300, 10_000),
+    Metric.VACANCY_RATE: (0.5, 50),
+    Metric.PRIME_YIELD: (1, 15),
+    Metric.TAKE_UP: (100, 2_000_000),
+    Metric.TRANSACTION_VOLUME: (1, 200_000),
+}
+
 
 class MarketMetric(BaseModel):
     """Ett nyckeltal ur en marknadsrapport. Ett enskilt värde har low == high."""
@@ -54,8 +66,14 @@ class MarketMetric(BaseModel):
             self.high = self.low
         if self.high < self.low:
             raise ValueError(f"high ({self.high}) är lägre än low ({self.low}).")
-        if self.unit == "%" and not 0.5 <= self.high <= 50:
-            raise ValueError(f"{self.high} är inte ett rimligt procenttal. Skriv 4,85 i Excel, inte 4,85 % eller 0,0485.")
+        minimum, maximum = PLAUSIBLE_RANGES[self.metric]
+        for value in (self.low, self.high):
+            if not minimum <= value <= maximum:
+                hint = " Skriv 4,85 i Excel, inte 4,85 % eller 0,0485." if self.unit == "%" else ""
+                raise ValueError(
+                    f"{value:g} {self.unit} är inte rimligt för {self.metric.value} "
+                    f"(förväntat {minimum:g}–{maximum:g}). Har du valt rätt nyckeltal i listan?{hint}"
+                )
         return self
 
     @property
