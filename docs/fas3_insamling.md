@@ -25,7 +25,13 @@ Håll muspekaren över en rubrik i Excel för att se vad kolumnen ska innehålla
 
 ### Segment
 
-Varje nyckeltal gäller ett segment: `office` (kontor), `retail` (butik) eller `industrial` (industri, lager och logistik). Rapporten fokuserar på kontor, men hyresnivåer för butik och industri samlas också in, eftersom de används för att kontrollera Fas 2:s antagna marknadshyror för alla fastighetstyper.
+Varje nyckeltal gäller ett segment: `office` (kontor), `retail` (butik), `industrial` (industri, lager och logistik) eller `residential` (bostäder). Rapporten fokuserar på kontor, men hyresnivåer för butik och industri samlas också in, eftersom de används för att kontrollera Fas 2:s antagna marknadshyror för alla fastighetstyper.
+
+För bostäder samlas bara `prime_yield` in. Bostadshyror sätts i förhandling enligt bruksvärdessystemet, inte av marknaden, och går inte att jämföra med lokalhyror. Bostadsyielden används för att kalibrera yield-kravet för blandfastigheter (butik i gatuplan, bostäder ovanför) och som riktmärke i rapporten.
+
+### Geografi
+
+Kolumnen `city` tar `malmo`, `lund`, `helsingborg` eller `oresund`. Använd `oresund` när rapporten bara anger en siffra för hela Öresundsregionen, som Cushman & Wakefields logistikrapport. Skriv inte samma regionsiffra på alla tre städerna: då ser den mer exakt ut än den är. I fliken Annonser gäller bara de tre städerna, eftersom en annons alltid har en adress.
 
 Hyrorna skiljer sig kraftigt mellan segmenten, eftersom hyresgästerna betalar för olika saker. Kontor: tillgänglighet för de anställda och byggnadens standard. Butik: kundflöde, som kan skilja sig mycket på några meter. Industri: stora, enkla ytor och närhet till motorväg. Lägesklasserna definieras olika per segment, så de går inte att jämföra rakt av mellan segmenten.
 

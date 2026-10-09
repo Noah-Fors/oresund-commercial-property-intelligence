@@ -14,18 +14,39 @@ from enum import Enum
 
 from pydantic import BaseModel, Field, HttpUrl, model_validator
 
-from src.phase1_location_scoring.models import City, Coordinates
+from src.phase1_location_scoring.models import CITY_LABELS, City, Coordinates
+
+
+class MarketArea(str, Enum):
+    """Geografin ett nyckeltal gäller: en av våra städer eller hela regionen.
+
+    Rapporterna delar ibland in marknaden i regioner i stället för städer,
+    t.ex. logistik, där Cushman & Wakefield bara rapporterar "Öresund".
+    """
+
+    MALMO = "malmo"
+    LUND = "lund"
+    HELSINGBORG = "helsingborg"
+    ORESUND = "oresund"  # Öresundsregionen: Malmö, Lund, Helsingborg och kommunerna runt omkring
+
+
+MARKET_AREA_LABELS = {**CITY_LABELS, "oresund": "Öresund"}
 
 
 class Segment(str, Enum):
-    """Marknadssegment som rapporterna delar in hyresmarknaden i."""
+    """Marknadssegment som rapporterna delar in fastighetsmarknaden i."""
 
-    OFFICE = "office"          # kontor
-    RETAIL = "retail"          # butik
-    INDUSTRIAL = "industrial"  # industri, lager och logistik
+    OFFICE = "office"            # kontor
+    RETAIL = "retail"            # butik
+    INDUSTRIAL = "industrial"    # industri, lager och logistik
+    RESIDENTIAL = "residential"  # bostäder, bara yield (hyrorna är reglerade)
 
 
-SEGMENT_LABELS = {"office": "Kontor", "retail": "Butik", "industrial": "Industri"}
+SEGMENT_LABELS = {"office": "Kontor", "retail": "Butik", "industrial": "Industri", "residential": "Bostäder"}
+
+# Bostadshyror sätts i förhandling enligt bruksvärdessystemet, inte av marknaden,
+# så för bostäder samlar vi bara in avkastningskravet.
+RESIDENTIAL_METRICS = {"prime_yield"}
 
 
 class Metric(str, Enum):
@@ -62,7 +83,7 @@ PLAUSIBLE_RANGES: dict[Metric, tuple[float, float]] = {
 class MarketMetric(BaseModel):
     """Ett nyckeltal ur en marknadsrapport. Ett enskilt värde har low == high."""
 
-    city: City
+    city: MarketArea
     submarket: str = Field(..., min_length=1, description="T.ex. 'CBD', 'Lägesklass A', 'Hela staden'.")
     segment: Segment
     metric: Metric
@@ -76,6 +97,11 @@ class MarketMetric(BaseModel):
     def _single_value_or_ordered_range(self) -> "MarketMetric":
         if self.high is None:
             self.high = self.low
+        if self.segment is Segment.RESIDENTIAL and self.metric.value not in RESIDENTIAL_METRICS:
+            raise ValueError(
+                f"För bostäder samlar vi bara in prime_yield, inte {self.metric.value}. "
+                "Bostadshyror är reglerade och går inte att jämföra med lokalhyror."
+            )
         if self.high < self.low:
             raise ValueError(f"high ({self.high}) är lägre än low ({self.low}).")
         minimum, maximum = PLAUSIBLE_RANGES[self.metric]

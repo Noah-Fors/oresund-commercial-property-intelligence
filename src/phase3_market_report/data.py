@@ -18,18 +18,21 @@ from pydantic import BaseModel, ValidationError
 
 from src.phase1_location_scoring.models import City
 
-from .models import MarketMetric, Metric, OfficeListing, Segment
+from .models import MarketArea, MarketMetric, Metric, OfficeListing, Segment
 
 MARKET_DIR = Path(__file__).resolve().parents[2] / "data" / "market"
 WORKBOOK = MARKET_DIR / "office_market_data.xlsx"
+# Höj när kolumner eller rullistor ändras, så uppgraderas befintliga arbetsböcker.
+TEMPLATE_VERSION = 3
+VERSION_PREFIX = "Mallversion: "
 METRICS_SHEET = "Nyckeltal"
 LISTINGS_SHEET = "Annonser"
 
 # Kolumn, bredd, förklaring (visas som kommentar i rubrikcellen).
 METRIC_COLUMNS = [
-    ("city", 13, "malmo, lund eller helsingborg (välj i listan)."),
+    ("city", 13, "malmo, lund, helsingborg, eller oresund för siffror som gäller hela Öresundsregionen."),
     ("submarket", 18, "Delområdet siffran gäller, t.ex. CBD, Västra Hamnen, Lägesklass A, Hela staden."),
-    ("segment", 12, "office (kontor), retail (butik) eller industrial (industri). Välj i listan."),
+    ("segment", 12, "office (kontor), retail (butik), industrial (industri) eller residential (bostäder, bara prime_yield)."),
     ("metric", 20, "Välj i listan: prime_rent, rent_range, vacancy_rate, prime_yield, take_up, transaction_volume."),
     ("low", 10, "Värdet, eller lägsta värdet om rapporten anger ett intervall. Procent som tal: 4,85 % skrivs 4,85."),
     ("high", 10, "Högsta värdet i intervallet. Lämna tomt om rapporten anger ett enda värde."),
@@ -66,6 +69,8 @@ INSTRUCTIONS = [
     "6. Kontrollera filen med: python -m src.phase3_market_report.check_data",
     "",
     "Håll muspekaren över en rubrik för att se vad kolumnen ska innehålla.",
+    "",
+    f"{VERSION_PREFIX}{TEMPLATE_VERSION}",
 ]
 
 
@@ -82,9 +87,10 @@ def create_template(path: Path = WORKBOOK) -> None:
     info.column_dimensions["A"].width = 110
 
     cities = ",".join(c.value for c in City)
+    areas = ",".join(a.value for a in MarketArea)
     metrics = ",".join(m.value for m in Metric)
     segments = ",".join(s.value for s in Segment)
-    _add_sheet(wb, METRICS_SHEET, METRIC_COLUMNS, {"city": cities, "segment": segments, "metric": metrics},
+    _add_sheet(wb, METRICS_SHEET, METRIC_COLUMNS, {"city": areas, "segment": segments, "metric": metrics},
                numbers=("low", "high"))
     _add_sheet(wb, LISTINGS_SHEET, LISTING_COLUMNS, {"city": cities},
                numbers=("area_sqm", "asking_rent_per_sqm", "latitude", "longitude"))
@@ -125,16 +131,22 @@ def _sheet_rows(ws) -> list[dict]:
     return rows
 
 
+def template_version(wb) -> int:
+    for (value,) in wb["Instruktioner"].iter_rows(min_col=1, max_col=1, values_only=True):
+        if isinstance(value, str) and value.startswith(VERSION_PREFIX):
+            return int(value.removeprefix(VERSION_PREFIX))
+    return 1
+
+
 def upgrade_workbook(path: Path = WORKBOOK) -> Path | None:
-    """Flyttar över befintliga rader till den senaste mallen om kolumner saknas.
+    """Flyttar över befintliga rader till den senaste mallen om mallen är äldre.
 
     Rader i Nyckeltal utan segment får "office", eftersom allt som samlades in
     före segmentkolumnen gällde kontor. Originalet sparas som en backup bredvid.
     Returnerar backupens sökväg, eller None om arbetsboken redan var aktuell.
     """
     old = load_workbook(path)
-    metric_header = [cell.value for cell in old[METRICS_SHEET][1]]
-    if all(name in metric_header for name, _, _ in METRIC_COLUMNS):
+    if template_version(old) >= TEMPLATE_VERSION:
         return None
 
     data = {sheet: _sheet_rows(old[sheet]) for sheet in (METRICS_SHEET, LISTINGS_SHEET)}

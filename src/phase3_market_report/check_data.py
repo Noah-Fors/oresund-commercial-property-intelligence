@@ -11,7 +11,7 @@ from collections import Counter
 from src.phase1_location_scoring.models import CITY_LABELS
 
 from .data import WORKBOOK, create_template, load_listings, load_metrics, upgrade_workbook
-from .models import SEGMENT_LABELS
+from .models import MARKET_AREA_LABELS, SEGMENT_LABELS
 
 
 def main() -> None:
@@ -32,7 +32,7 @@ def main() -> None:
     print(f"Nyckeltal: {len(metrics.rows)} giltiga rader")
     for metric in metrics.rows:
         value = f"{metric.low:g}" if metric.low == metric.high else f"{metric.low:g}–{metric.high:g}"
-        print(f"  {CITY_LABELS[metric.city.value]:<12} {SEGMENT_LABELS[metric.segment.value]:<9} "
+        print(f"  {MARKET_AREA_LABELS[metric.city.value]:<12} {SEGMENT_LABELS[metric.segment.value]:<9} "
               f"{metric.submarket:<18} {metric.metric.value:<20} "
               f"{value} {metric.unit}  ({metric.source}, {metric.published})")
 
