@@ -25,6 +25,8 @@ Saker vi medvetet har skjutit upp. Flytta en punkt till "Klart" när den är gjo
 
 ## Fas 3 — Marknadsrapport
 
+- [ ] **Marknadshyran ska bero på läget.** I Fas 2 påverkar location score bara yield-kravet, medan marknadshyran är en siffra per fastighetstyp. Newsecs hyresnivåer visar att hyran skiljer sig kraftigt mellan lägesklasser: tätortshandel i Malmö kostar 2 100–6 300 kr/kvm i AA-läge men 950–1 525 i C-läge. Våra tätortshandelsfastigheter spänner från Triangeln (score 97) till Käglingevägen 154 (score 7), så en gemensam hyra på 2 200 kr passar ingen av dem. Koppla location score till lägesklass och hämta hyran därifrån.
+- [ ] **Källa för hyror i externhandel.** Newsecs lägesklasser för butik gäller handel i stadskärnor och passar inte köpcentrum och handelsplatser som Emporia. Där är hyran ofta delvis omsättningsbaserad.
 - [ ] **Fler fastighetstyper än kontor.** Rapporten börjar med kontor. Handel och logistik kan läggas till med samma mall.
 
 ## Klart
