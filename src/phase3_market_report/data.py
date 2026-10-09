@@ -5,11 +5,12 @@ Arbetsboken har två flikar som läses av koden: "Nyckeltal" (MarketMetric) och
 stoppar inte resten. Felen returneras med Excel-radnummer så att de går att hitta.
 """
 
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
 import pandas as pd
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 from openpyxl.comments import Comment
 from openpyxl.styles import Font, PatternFill
 from openpyxl.worksheet.datavalidation import DataValidation
@@ -17,7 +18,7 @@ from pydantic import BaseModel, ValidationError
 
 from src.phase1_location_scoring.models import City
 
-from .models import MarketMetric, Metric, OfficeListing
+from .models import MarketMetric, Metric, OfficeListing, Segment
 
 MARKET_DIR = Path(__file__).resolve().parents[2] / "data" / "market"
 WORKBOOK = MARKET_DIR / "office_market_data.xlsx"
@@ -28,6 +29,7 @@ LISTINGS_SHEET = "Annonser"
 METRIC_COLUMNS = [
     ("city", 13, "malmo, lund eller helsingborg (välj i listan)."),
     ("submarket", 18, "Delområdet siffran gäller, t.ex. CBD, Västra Hamnen, Lägesklass A, Hela staden."),
+    ("segment", 12, "office (kontor), retail (butik) eller industrial (industri). Välj i listan."),
     ("metric", 20, "Välj i listan: prime_rent, rent_range, vacancy_rate, prime_yield, take_up, transaction_volume."),
     ("low", 10, "Värdet, eller lägsta värdet om rapporten anger ett intervall. Procent som tal: 4,85 % skrivs 4,85."),
     ("high", 10, "Högsta värdet i intervallet. Lämna tomt om rapporten anger ett enda värde."),
@@ -81,7 +83,9 @@ def create_template(path: Path = WORKBOOK) -> None:
 
     cities = ",".join(c.value for c in City)
     metrics = ",".join(m.value for m in Metric)
-    _add_sheet(wb, METRICS_SHEET, METRIC_COLUMNS, {"city": cities, "metric": metrics}, numbers=("low", "high"))
+    segments = ",".join(s.value for s in Segment)
+    _add_sheet(wb, METRICS_SHEET, METRIC_COLUMNS, {"city": cities, "segment": segments, "metric": metrics},
+               numbers=("low", "high"))
     _add_sheet(wb, LISTINGS_SHEET, LISTING_COLUMNS, {"city": cities},
                numbers=("area_sqm", "asking_rent_per_sqm", "latitude", "longitude"))
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -110,6 +114,50 @@ def _add_sheet(wb: Workbook, title: str, columns, dropdowns: dict[str, str], num
             for row in range(2, 1001):
                 ws[f"{letter}{row}"].number_format = "yyyy-mm-dd"
     ws.freeze_panes = "A2"
+
+
+def _sheet_rows(ws) -> list[dict]:
+    header = [cell.value for cell in ws[1]]
+    rows = []
+    for values in ws.iter_rows(min_row=2, values_only=True):
+        if any(v is not None for v in values):
+            rows.append({h: v for h, v in zip(header, values) if h})
+    return rows
+
+
+def upgrade_workbook(path: Path = WORKBOOK) -> Path | None:
+    """Flyttar över befintliga rader till den senaste mallen om kolumner saknas.
+
+    Rader i Nyckeltal utan segment får "office", eftersom allt som samlades in
+    före segmentkolumnen gällde kontor. Originalet sparas som en backup bredvid.
+    Returnerar backupens sökväg, eller None om arbetsboken redan var aktuell.
+    """
+    old = load_workbook(path)
+    metric_header = [cell.value for cell in old[METRICS_SHEET][1]]
+    if all(name in metric_header for name, _, _ in METRIC_COLUMNS):
+        return None
+
+    data = {sheet: _sheet_rows(old[sheet]) for sheet in (METRICS_SHEET, LISTINGS_SHEET)}
+    for row in data[METRICS_SHEET]:
+        row.setdefault("segment", Segment.OFFICE.value)
+
+    new_path = path.with_name(path.stem + ".new.xlsx")
+    new_path.unlink(missing_ok=True)
+    create_template(new_path)
+    wb = load_workbook(new_path)
+    for sheet, rows in data.items():
+        ws = wb[sheet]
+        header = [cell.value for cell in ws[1]]
+        for r, row in enumerate(rows, start=2):
+            for key, value in row.items():
+                if key in header:
+                    ws.cell(row=r, column=header.index(key) + 1, value=value)
+    wb.save(new_path)
+
+    backup = path.with_name(path.stem + ".backup.xlsx")
+    shutil.copy2(path, backup)
+    new_path.replace(path)
+    return backup
 
 
 @dataclass

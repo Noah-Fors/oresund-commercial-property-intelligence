@@ -9,8 +9,9 @@ from src.phase3_market_report.data import (
     create_template,
     load_listings,
     load_metrics,
+    upgrade_workbook,
 )
-from src.phase3_market_report.models import MarketMetric, Metric, OfficeListing
+from src.phase3_market_report.models import MarketMetric, Metric, OfficeListing, Segment
 
 
 def _fill(path, sheet, rows):
@@ -41,7 +42,7 @@ def test_empty_template_loads_without_rows_or_errors(workbook):
 
 
 def test_single_value_metric_gets_high_equal_to_low():
-    metric = MarketMetric(city="malmo", submarket="CBD", metric="prime_yield", low=4.85,
+    metric = MarketMetric(city="malmo", submarket="CBD", segment="office", metric="prime_yield", low=4.85,
                           source="Exempel", published=date(2026, 3, 31))
     assert metric.high == 4.85
     assert metric.unit == "%"
@@ -49,20 +50,20 @@ def test_single_value_metric_gets_high_equal_to_low():
 
 def test_percent_written_as_decimal_is_rejected():
     with pytest.raises(ValueError, match="4.85"):
-        MarketMetric(city="malmo", submarket="CBD", metric="vacancy_rate", low=0.10,
+        MarketMetric(city="malmo", submarket="CBD", segment="office", metric="vacancy_rate", low=0.10,
                      source="Exempel", published=date(2026, 3, 31))
 
 
 def test_rent_written_as_yield_is_rejected():
     # Prime yield 4,52 % inmatat som decimaltal, med prime_rent valt i rullistan.
     with pytest.raises(ValueError, match="prime_rent"):
-        MarketMetric(city="malmo", submarket="CBD", metric="prime_rent", low=0.0452,
+        MarketMetric(city="malmo", submarket="CBD", segment="office", metric="prime_rent", low=0.0452,
                      source="Exempel", published=date(2026, 6, 30))
 
 
 def test_implausible_low_end_of_range_is_rejected():
     with pytest.raises(ValueError, match="rent_range"):
-        MarketMetric(city="lund", submarket="Lägesklass A", metric="rent_range", low=170, high=2700,
+        MarketMetric(city="lund", submarket="Lägesklass A", segment="office", metric="rent_range", low=170, high=2700,
                      source="Exempel", published=date(2026, 6, 30))
 
 
@@ -74,13 +75,14 @@ def test_monthly_rent_is_caught():
 
 def test_metrics_sheet_reads_excel_dates_and_ranges(workbook):
     _fill(workbook, METRICS_SHEET, [
-        {"city": "lund", "submarket": "Lägesklass A", "metric": "rent_range", "low": 1700, "high": 2700,
+        {"city": "lund", "submarket": "Lägesklass A", "segment": "industrial", "metric": "rent_range", "low": 1700, "high": 2700,
          "source": "Exempel", "published": datetime(2026, 6, 30)},
     ])
     result = load_metrics(workbook)
     assert result.errors == []
     [metric] = result.rows
     assert metric.metric is Metric.RENT_RANGE
+    assert metric.segment is Segment.INDUSTRIAL
     assert metric.published == date(2026, 6, 30)
     assert metric.midpoint == 2200
 
@@ -101,3 +103,30 @@ def test_listing_errors_point_to_the_excel_row(workbook):
     assert result.rows[1].asking_rent_per_sqm is None
     assert result.errors[0].startswith("rad 3: city")
     assert result.errors[1].startswith("rad 4: coordinates")
+
+
+def test_segment_is_required(workbook):
+    _fill(workbook, METRICS_SHEET, [
+        {"city": "malmo", "submarket": "Lägesklass A", "metric": "rent_range", "low": 1600, "high": 3000,
+         "source": "Exempel", "published": "2026-10-09"},
+    ])
+    assert load_metrics(workbook).errors == ["rad 2: segment: Input should be 'office', 'retail' or 'industrial'"]
+
+
+def test_upgrade_moves_rows_from_a_workbook_without_segment_and_marks_them_office(workbook):
+    wb = load_workbook(workbook)
+    wb[METRICS_SHEET].delete_cols(3)  # så såg mallen ut innan segment fanns
+    wb.save(workbook)
+    old_row = {"city": "malmo", "submarket": "Lägesklass AA", "metric": "rent_range", "low": 1800,
+               "high": 3600, "source": "Newsec via Objektvision", "published": datetime(2026, 10, 9)}
+    _fill(workbook, METRICS_SHEET, [old_row])
+    _fill(workbook, LISTINGS_SHEET, [{"address": "Stortorget 1", "city": "malmo"}])
+
+    backup = upgrade_workbook(workbook)
+
+    assert backup.exists()
+    [metric] = load_metrics(workbook).rows
+    assert metric.segment is Segment.OFFICE
+    assert (metric.low, metric.high, metric.published) == (1800, 3600, date(2026, 10, 9))
+    assert load_workbook(workbook)[LISTINGS_SHEET]["A2"].value == "Stortorget 1"
+    assert upgrade_workbook(workbook) is None  # andra gången finns inget att uppgradera

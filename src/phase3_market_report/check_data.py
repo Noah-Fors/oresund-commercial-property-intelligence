@@ -10,7 +10,8 @@ from collections import Counter
 
 from src.phase1_location_scoring.models import CITY_LABELS
 
-from .data import WORKBOOK, create_template, load_listings, load_metrics
+from .data import WORKBOOK, create_template, load_listings, load_metrics, upgrade_workbook
+from .models import SEGMENT_LABELS
 
 
 def main() -> None:
@@ -19,11 +20,20 @@ def main() -> None:
         print(f"Skapade en tom mall: {WORKBOOK}")
         return
 
+    try:
+        backup = upgrade_workbook()
+    except PermissionError:
+        print("Arbetsboken är öppen i Excel. Stäng Excel och kör kommandot igen.")
+        return
+    if backup:
+        print(f"Arbetsboken uppgraderades till den senaste mallen. Originalet sparades som {backup.name}.\n")
+
     metrics, listings = load_metrics(), load_listings()
     print(f"Nyckeltal: {len(metrics.rows)} giltiga rader")
     for metric in metrics.rows:
         value = f"{metric.low:g}" if metric.low == metric.high else f"{metric.low:g}–{metric.high:g}"
-        print(f"  {CITY_LABELS[metric.city.value]:<12} {metric.submarket:<18} {metric.metric.value:<20} "
+        print(f"  {CITY_LABELS[metric.city.value]:<12} {SEGMENT_LABELS[metric.segment.value]:<9} "
+              f"{metric.submarket:<18} {metric.metric.value:<20} "
               f"{value} {metric.unit}  ({metric.source}, {metric.published})")
 
     print(f"\nAnnonser: {len(listings.rows)} giltiga rader")

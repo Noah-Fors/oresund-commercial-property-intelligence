@@ -23,9 +23,23 @@ Håll muspekaren över en rubrik i Excel för att se vad kolumnen ska innehålla
 | `take_up` | kvm | Uthyrd yta under perioden. Mäter efterfrågan. |
 | `transaction_volume` | Mkr | Köp och försäljningar av fastigheter under perioden. Mäter investerarnas aktivitet. |
 
+### Segment
+
+Varje nyckeltal gäller ett segment: `office` (kontor), `retail` (butik) eller `industrial` (industri, lager och logistik). Rapporten fokuserar på kontor, men hyresnivåer för butik och industri samlas också in, eftersom de används för att kontrollera Fas 2:s antagna marknadshyror för alla fastighetstyper.
+
+Hyrorna skiljer sig kraftigt mellan segmenten, eftersom hyresgästerna betalar för olika saker. Kontor: tillgänglighet för de anställda och byggnadens standard. Butik: kundflöde, som kan skilja sig mycket på några meter. Industri: stora, enkla ytor och närhet till motorväg. Lägesklasserna definieras olika per segment, så de går inte att jämföra rakt av mellan segmenten.
+
+### Datum
+
+| Källan anger | Skriv i published |
+|---|---|
+| Ett exakt datum | Det datumet |
+| Ett kvartal, t.ex. "Q2 2026" | Kvartalets sista dag: `2026-06-30` |
+| Bara ett år, eller "uppdateras löpande" | Datumet du läste sidan, och årtalet i source |
+
 ### Var siffrorna finns
 
-- **Objektvision, Marknadsstatistik, Hyresnivåer:** hyresintervall per lägesklass A/B/C för kontor, bland annat i Malmö, Lund och Helsingborg. Detta är den enda källan som täcker alla tre städerna.
+- **Objektvision, Marknadsstatistik, Hyresnivåer:** hyresintervall per lägesklass (AA/A/B/C) för kontor, butik och industri, bland annat i Malmö, Lund och Helsingborg. Siffrorna kommer från Newsec. Detta är den enda källan som täcker alla tre städerna.
 - **Cushman & Wakefield, MarketBeat och Office Snapshot Sweden:** prime rent, vacancy och prime yield för Malmö CBD, kvartalsvis.
 - **JLL, Nordic Office Insight:** prime rent och prime yield för de nordiska huvudstäderna och Malmö, halvårsvis.
 - **Citymark:** vakansgrad för Malmös kontorsmarknad per delområde, två gånger per år.

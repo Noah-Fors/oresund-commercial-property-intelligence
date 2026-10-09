@@ -17,6 +17,17 @@ from pydantic import BaseModel, Field, HttpUrl, model_validator
 from src.phase1_location_scoring.models import City, Coordinates
 
 
+class Segment(str, Enum):
+    """Marknadssegment som rapporterna delar in hyresmarknaden i."""
+
+    OFFICE = "office"          # kontor
+    RETAIL = "retail"          # butik
+    INDUSTRIAL = "industrial"  # industri, lager och logistik
+
+
+SEGMENT_LABELS = {"office": "Kontor", "retail": "Butik", "industrial": "Industri"}
+
+
 class Metric(str, Enum):
     PRIME_RENT = "prime_rent"                  # kr/kvm/år, högsta hyran för de bästa lokalerna
     RENT_RANGE = "rent_range"                  # kr/kvm/år, normalt hyresintervall i ett delområde
@@ -53,6 +64,7 @@ class MarketMetric(BaseModel):
 
     city: City
     submarket: str = Field(..., min_length=1, description="T.ex. 'CBD', 'Lägesklass A', 'Hela staden'.")
+    segment: Segment
     metric: Metric
     low: float = Field(..., ge=0)
     high: float | None = Field(default=None, ge=0, description="Tomt om rapporten anger ett enda värde.")
