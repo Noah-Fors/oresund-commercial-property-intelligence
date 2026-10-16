@@ -1,0 +1,49 @@
+# Att göra senare
+
+Saker vi medvetet har skjutit upp. Flytta en punkt till "Klart" när den är gjord.
+
+## Fas 1 — Location scoring
+
+- [ ] **Utöka motorvägsdefinitionen.** Just nu räknas bara motorvägar (E6/E20, E22, E4, Yttre ringvägen). Överväg att lägga till motortrafikleder och det tunga vägnätet (viktiga riksvägar för lastbilstrafik).
+- [ ] **Ta med bussar i transit-poänget.** Idag räknas bara tåg och spårvagn, vilket undervärderar lägen med bra busstrafik (t.ex. Ringugnsgatan 14 i Limhamn). Riktig hållplatsdata finns hos Skånetrafiken.
+- [ ] **Exakta koordinater för exempeldatan.** Nio av femton fastigheter, alla stationer och alla motorvägstrafikplatser har ungefärliga koordinater. Trafikplatserna kan avvika flera hundra meter.
+- [ ] **Få Lantmäteriets API att fungera.** Prenumerationen är klar, men vi har inte lyckats hämta en access token ("Consumer key and secret not generated" i API Console).
+- [ ] **Bättre källa för arbetsplatser.** SCB publicerar inte dagbefolkning (var folk arbetar) per DeSO som öppna data, bara per kommun. Kontorsräkning från OpenStreetMap testades men är opålitlig (Hyllie fick 1 kontor, Ideon 8), eftersom kontor sällan är inprickade. Alternativ: beställa dagbefolkning per DeSO från SCB, Lantmäteriets byggnadsregister (byggnadens ändamål), eller räkna kontorsbyggnader i OpenStreetMap.
+- [ ] **Validera butiksräkningen från OpenStreetMap.** Emporia fick bara 62 verksamheter inom 500 m, vilket tyder på att butikerna inne i köpcentret inte är inprickade. Stickprovskontrollera några lägen mot verkligheten.
+- [ ] **Stadsdel som eget fält.** Områdesnamnen (Limhamn, Oxie, Råå …) försvann när adresserna lades in. Lägg till ett `district`-fält om de behövs i karta eller rapport.
+- [ ] **Befolkning i närområdet som parameter.** Tätortshandel (t.ex. pizzerian på Käglingevägen 154) lever på boende i närheten, vilket ingen av parametrarna fångar idag. Data finns hos SCB.
+
+## Fas 2 — Värderingsmotor
+
+- [ ] **Kalibrera yield-ankaret.** Location score 60 antas motsvara ett normalt läge (basyield). Byt mot medianen av location score för alla fastigheter av samma typ i staden, eller räkna om poängen till percentil, när det finns riktig data om beståndet.
+- [ ] **Basyields från riktiga marknadsrapporter.** Basyield per fastighetstyp och stad är exempelvärden. Ersätt med aktuella siffror från rådgivningsfirmornas marknadsrapporter (kopplar till Fas 3).
+- [ ] **Fler faktorer än läget i yield-kravet.** Byggnadens skick, hyresgästernas kreditvärdighet och WAULT påverkar också yielden. Idag tillskrivs hela justeringen läget.
+- [ ] **Samband mellan antagandena i Monte Carlo.** Yield, marknadshyra och KPI slumpas oberoende av varandra. I en lågkonjunktur stiger ofta yields samtidigt som hyrorna faller, så den verkliga risken i svansarna är troligen större än simuleringen visar.
+- [ ] **Uthyrningskostnader vid tomställning.** Void deduction drar bara av förlorad hyra. Lägg till kostnader för hyresgästanpassning och mäklararvode.
+- [ ] **Dela upp yield-osäkerheten i Monte Carlo.** Idag används samma slumpade yield för både discount rate (dagens avkastningskrav) och exit yield (om fem år). Dagens yield är ganska känd från transaktioner (±0,20 procentenheter), medan förändringen fram till exit är osäkrare (±0,50). Ett test visade att intervallet knappt ändras (±16 % mot ±17 %), men uppdelningen är konceptuellt mer korrekt.
+- [ ] **Formulera Monte Carlo-intervallet rätt.** Intervallet beskriver osäkerheten i investeringens utfall över fem år, inte osäkerheten i dagens marknadsvärde. Det ska framgå i appen och rapporten.
+
+## Fas 3 — Marknadsrapport
+
+- [ ] **Marknadshyran ska bero på läget.** I Fas 2 påverkar location score bara yield-kravet, medan marknadshyran är en siffra per fastighetstyp. Newsecs hyresnivåer visar att hyran skiljer sig kraftigt mellan lägesklasser: tätortshandel i Malmö kostar 2 100–6 300 kr/kvm i AA-läge men 950–1 525 i C-läge. Våra tätortshandelsfastigheter spänner från Triangeln (score 97) till Käglingevägen 154 (score 7), så en gemensam hyra på 2 200 kr passar ingen av dem. Koppla location score till lägesklass och hämta hyran därifrån.
+- [ ] **Källa för hyror i externhandel.** Newsecs lägesklasser för butik gäller handel i stadskärnor och passar inte köpcentrum och handelsplatser som Emporia. Där är hyran ofta delvis omsättningsbaserad.
+- [ ] **Fler fastighetstyper än kontor.** Rapporten börjar med kontor. Handel och logistik kan läggas till med samma mall.
+
+## Klart
+
+- [x] Datamodell för fastigheter och location score
+- [x] Exempeldata: 15 fastigheter och 9 stationer
+- [x] Transit-poäng med exponentiell distance decay (halveras var 700 m)
+- [x] Interaktiv karta och tabell i Streamlit
+- [x] Handel uppdelad i tätortshandel och externhandel
+- [x] Motorvägsparameter: avstånd till närmaste trafikplats (halveras var 2 000 m)
+- [x] Vikter per fastighetstyp och totalt location score
+- [x] Kommersiell täthet från OpenStreetMap (verksamheter inom 500 m, mättnadskurva där 50 ger 50 poäng)
+- [x] Fas 2: NOI och direct capitalisation
+- [x] Fas 2: DCF med tidsvärdet av pengar och exit value
+- [x] Fas 2: DCF kontrakt för kontrakt, WAULT, void deduction
+- [x] Fas 2: Location score → yield-krav (asymmetrisk S-kurva runt score 60)
+- [x] Fas 2: Känslighetsmatris yield × marknadshyra
+- [x] Fas 2: Monte Carlo-simulering (10 000 scenarier)
+- [x] Fas 2: Värderingsflik i Streamlit (indata, kassaflöde, känslighetsmatris, Monte Carlo-histogram)
+- [x] Fas 3: Excel-mall och datamodell för nyckeltal och kontorsannonser, med kontrollskript

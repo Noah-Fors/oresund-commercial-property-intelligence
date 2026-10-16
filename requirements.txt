@@ -1,4 +1,5 @@
 pandas>=2.2
+pydantic>=2.7
 geopandas>=0.14
 shapely>=2.0
 folium>=0.16
@@ -6,5 +7,7 @@ streamlit>=1.35
 streamlit-folium>=0.21
 plotly>=5.22
 matplotlib>=3.9
+openpyxl>=3.1
 requests>=2.32
 python-dotenv>=1.0
+pytest>=8.0
