@@ -15,6 +15,11 @@ data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 
+# Excel: låsfiler och backuper från uppgradering av mallen
+data/market/~$*
+data/market/*.backup.xlsx
+data/market/*.new.xlsx
+
 # Notebooks checkpoints
 .ipynb_checkpoints/
 
