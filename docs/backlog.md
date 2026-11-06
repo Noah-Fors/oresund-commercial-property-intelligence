@@ -48,3 +48,4 @@ Saker vi medvetet har skjutit upp. Flytta en punkt till "Klart" när den är gjo
 - [x] Fas 2: Monte Carlo-simulering (10 000 scenarier)
 - [x] Fas 2: Värderingsflik i Streamlit (indata, kassaflöde, känslighetsmatris, Monte Carlo-histogram)
 - [x] Fas 3: Excel-mall och datamodell för nyckeltal och kontorsannonser, med kontrollskript
+- [x] Fas 3: Mall och kontroll för fastigheter och normalvärden från MSCI Property Intel (licensierad data, sparas bara lokalt)

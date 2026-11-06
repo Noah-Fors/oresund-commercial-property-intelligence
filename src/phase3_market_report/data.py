@@ -98,7 +98,12 @@ def create_template(path: Path = WORKBOOK) -> None:
     wb.save(path)
 
 
-def _add_sheet(wb: Workbook, title: str, columns, dropdowns: dict[str, str], numbers: tuple[str, ...]) -> None:
+def _add_sheet(wb: Workbook, title: str, columns, dropdowns: dict[str, str], numbers: tuple[str, ...],
+               open_lists: tuple[str, ...] = (), dates: tuple[str, ...] = ("published", "collected")) -> None:
+    """Lägger till en flik med rubriker, förklaringar, rullistor och talformat.
+
+    Kolumner i open_lists får en rullista med förslag men tillåter också annan text.
+    """
     ws = wb.create_sheet(title)
     header_fill = PatternFill("solid", fgColor="DCE9F9")
     for index, (name, width, help_text) in enumerate(columns, start=1):
@@ -110,13 +115,14 @@ def _add_sheet(wb: Workbook, title: str, columns, dropdowns: dict[str, str], num
         ws.column_dimensions[letter].width = width
         cell_range = f"{letter}2:{letter}1000"
         if name in dropdowns:
-            validation = DataValidation(type="list", formula1=f'"{dropdowns[name]}"', allow_blank=True)
+            validation = DataValidation(type="list", formula1=f'"{dropdowns[name]}"', allow_blank=True,
+                                        showErrorMessage=name not in open_lists)
             ws.add_data_validation(validation)
             validation.add(cell_range)
         if name in numbers:
             for row in range(2, 1001):
                 ws[f"{letter}{row}"].number_format = "0.00####"
-        if name in ("published", "collected"):
+        if name in dates:
             for row in range(2, 1001):
                 ws[f"{letter}{row}"].number_format = "yyyy-mm-dd"
     ws.freeze_panes = "A2"
